@@ -41,8 +41,9 @@ export class PaymentsService {
     config: ConfigService,
   ) {
     this.serverKey = config.getOrThrow<string>('MIDTRANS_SERVER_KEY');
-    this.frontendUrl =
-      config.get<string>('FRONTEND_URL') ?? 'http://localhost:3001';
+    this.frontendUrl = (
+      config.get<string>('FRONTEND_URL') ?? 'http://localhost:3001'
+    ).replace(/\/+$/, '');
   }
 
   private get authHeader(): string {
