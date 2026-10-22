@@ -92,7 +92,7 @@ export default async function Pricelist() {
                     {formatRupiah(service.price)}
                   </span>
                   <Link
-                    href="/login"
+                    href={`/booking?serviceId=${encodeURIComponent(service.id)}`}
                     className="rounded-full bg-rosewood px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-rosewood-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rosewood focus-visible:ring-offset-2"
                   >
                     Booking

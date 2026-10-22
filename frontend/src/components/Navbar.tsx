@@ -40,6 +40,9 @@ export default function Navbar() {
             <span aria-hidden="true" className="inline-block h-9 w-28" />
           ) : isLoggedIn ? (
             <>
+              <Link href="/bookings" className={linkClass}>
+                Booking Saya
+              </Link>
               {role === 'ADMIN' && (
                 <span className="rounded-full bg-rosewood px-3 py-1 text-xs font-semibold uppercase tracking-wide text-white">
                   Admin

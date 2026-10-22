@@ -37,6 +37,10 @@ model Booking {
   notes      String?
   totalPrice Int
   status     BookingStatus @default(PENDING)
+  dpAmount   Int?
+  orderId    String?       @unique
+  paymentUrl String?
+  paidAt     DateTime?
   user       User          @relation(fields: [userId], references: [id])
   service    Service       @relation(fields: [serviceId], references: [id])
 }

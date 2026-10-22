@@ -21,6 +21,60 @@ export interface LoginResponse {
   accessToken: string;
 }
 
+export type BookingStatus =
+  | 'PENDING'
+  | 'PAID'
+  | 'CONFIRMED'
+  | 'DONE'
+  | 'CANCELLED';
+
+export interface AvailabilitySlot {
+  time: string;
+  available: boolean;
+}
+
+export interface Availability {
+  date: string;
+  durationMin: number;
+  slots: AvailabilitySlot[];
+}
+
+export interface Booking {
+  id: string;
+  serviceId: string;
+  startTime: string;
+  endTime: string;
+  location: string | null;
+  notes: string | null;
+  totalPrice: number;
+  status: BookingStatus;
+  dpAmount: number | null;
+  orderId: string | null;
+  paidAt: string | null;
+}
+
+export interface MyBooking extends Booking {
+  service: Service;
+}
+
+export interface CreateBookingInput {
+  serviceId: string;
+  startTime: string;
+  location?: string;
+  notes?: string;
+}
+
+/** Error API dengan status HTTP, agar UI bisa membedakan mis. 409. */
+export class ApiError extends Error {
+  readonly status: number;
+
+  constructor(message: string, status: number) {
+    super(message);
+    this.name = 'ApiError';
+    this.status = status;
+  }
+}
+
 const rupiahFormatter = new Intl.NumberFormat('id-ID', {
   style: 'currency',
   currency: 'IDR',
@@ -74,8 +128,9 @@ export async function apiFetch<T>(
 
   const body = await readJson(res);
   if (!res.ok) {
-    throw new Error(
+    throw new ApiError(
       extractErrorMessage(body, `Permintaan gagal (status ${res.status}).`),
+      res.status,
     );
   }
   return body as T;
@@ -109,4 +164,60 @@ export function loginUser(input: {
   password: string;
 }): Promise<LoginResponse> {
   return apiPost<LoginResponse, typeof input>('/auth/login', input);
+}
+
+function authHeaders(token: string): Record<string, string> {
+  return { Authorization: `Bearer ${token}` };
+}
+
+export function getAvailability(
+  date: string,
+  serviceId: string,
+): Promise<Availability> {
+  const query = new URLSearchParams({ date, serviceId });
+  return apiFetch<Availability>(`/bookings/availability?${query.toString()}`, {
+    cache: 'no-store',
+  });
+}
+
+export function createBooking(
+  token: string,
+  input: CreateBookingInput,
+): Promise<Booking> {
+  return apiFetch<Booking>('/bookings', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...authHeaders(token) },
+    body: JSON.stringify(input),
+  });
+}
+
+export function getMyBookings(token: string): Promise<MyBooking[]> {
+  return apiFetch<MyBooking[]>('/bookings/my', {
+    headers: authHeaders(token),
+    cache: 'no-store',
+  });
+}
+
+export function cancelBooking(token: string, id: string): Promise<Booking> {
+  return apiFetch<Booking>(`/bookings/${encodeURIComponent(id)}/cancel`, {
+    method: 'PATCH',
+    headers: authHeaders(token),
+  });
+}
+
+export function createPayment(
+  token: string,
+  bookingId: string,
+): Promise<{ redirectUrl: string }> {
+  return apiFetch<{ redirectUrl: string }>(
+    `/payments/bookings/${encodeURIComponent(bookingId)}/pay`,
+    { method: 'POST', headers: authHeaders(token) },
+  );
+}
+
+export function syncPayment(token: string, bookingId: string): Promise<Booking> {
+  return apiFetch<Booking>(
+    `/payments/bookings/${encodeURIComponent(bookingId)}/sync`,
+    { method: 'POST', headers: authHeaders(token) },
+  );
 }
